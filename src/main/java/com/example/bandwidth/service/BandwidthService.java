@@ -26,8 +26,8 @@ public class BandwidthService {
     private int point;
     @Value("${bandwidth.window.size}")
     private int windowSize;
-    @Value("${bandwidth.window.interval}")
-    private int windowInterval;
+    @Value("${bandwidth.window.lag}")
+    private int windowLag;
 
     @Autowired
     private FileUploadRepository repository;
@@ -35,7 +35,7 @@ public class BandwidthService {
     @PostConstruct
     private void init() {
         windowSize *= 60000;    // 분 -> ms
-        windowInterval *= 60000;  // 분 -> ms
+        windowLag *= 60000;  // 분 -> ms
     }
 
     public Double combine(Timestamp start, Timestamp end) throws Exception {
@@ -45,8 +45,8 @@ public class BandwidthService {
         if(term < windowSize) {
             throw new Exception("시간이 windowSize보다 작음 " + term + " < " + windowSize);
         }
-        for(int i = 0; i <= term/windowInterval; i++) {
-            Timestamp windowStart = new Timestamp(start.getTime() + i * windowInterval);
+        for(int i = 0; i <= term/ windowLag; i++) {
+            Timestamp windowStart = new Timestamp(start.getTime() + i * windowLag);
             Timestamp windowEnd = new Timestamp(windowStart.getTime() + windowSize - 1);
             if(windowEnd.getTime() > end.getTime()) {
                 break;

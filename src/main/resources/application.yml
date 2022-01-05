@@ -25,12 +25,12 @@ spring:
     username: sa
     initialization-mode: always
     schema: classpath:schema.sql
-    data: classpath:data.sql
+    data: classpath:data-sequential.sql
 
 bandwidth:
   window:
     size: 5
-    interval: 1
+    lag: 1
 
   threshold: 1024
   point: 3
