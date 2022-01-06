@@ -1,18 +1,13 @@
 package com.example.bandwidth.service;
 
-import com.example.bandwidth.entity.FileUpload;
-import com.example.bandwidth.repository.FileUploadRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.Precision;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -29,51 +24,30 @@ public class BandwidthService {
     @Value("${bandwidth.window.lag}")
     private int windowLag;
 
-    @Autowired
-    private FileUploadRepository repository;
-
-    @PostConstruct
-    private void init() {
-        windowSize *= 60000;    // 분 -> ms
-        windowLag *= 60000;  // 분 -> ms
-    }
-
-    public Double combine(Timestamp start, Timestamp end) throws Exception {
+    public Double combine(List<Double> speed) throws Exception {
         List<Double> average = new ArrayList<>();
-        long term = end.getTime() - start.getTime();
-        log.info("시작시간: {} 죵료시간: {} 시간간격: {}", start, end, term);
-        if(term < windowSize) {
-            throw new Exception("시간이 windowSize보다 작음 " + term + " < " + windowSize);
+        if(speed.size() < windowSize) {
+            throw new Exception("시간이 windowSize보다 작음 " + speed.size() + " < " + windowSize);
         }
-        for(int i = 0; i <= term/ windowLag; i++) {
-            Timestamp windowStart = new Timestamp(start.getTime() + i * windowLag);
-            Timestamp windowEnd = new Timestamp(windowStart.getTime() + windowSize - 1);
-            if(windowEnd.getTime() > end.getTime()) {
-                break;
-            }
-            List<FileUpload> list = repository.findAllByStartTimeBetween(windowStart, windowEnd);
-            double result = 0;
-            if(!list.isEmpty()) {
-                result = calculate(list);
-                average.add(result);
-            }
-            log.info("window시작: {} window종료: {} 전송건수: {} 평균값: {}", windowStart, windowEnd, list.size(), result);
+        int windowCount = speed.size() / windowLag - windowSize; // 범위 내에 들어갈 window의 개수
+        for(int i = 0; i <= windowCount; i++) {
+            List<Double> window = speed.subList(i, i + windowSize - 1);
+            double result = calculate(window);
+            average.add(result);
         }
         log.info("예측결과: {}", round(predict(average)));
         return round(predict(average));
     }
 
-    public Double calculate(List<FileUpload> list){
-        double size = 0;
-        double time = 0;
-        for(FileUpload f:list) {
-            size += f.getFileSize();
-            time += f.getTerm();
+    public Double calculate(List<Double> list){
+        double speed = 0;
+        for(Double f:list) {
+            speed += f;
         }
-        if(time == 0) {
-            throw new ArithmeticException("list의 크기가 0이거나 전송 시간의 합이 0입니다.");
+        if(list.isEmpty()) {
+            throw new ArithmeticException("windowSize가 0입니다.");
         }
-        return (size/time)*1000;
+        return speed / list.size();
     }
 
     public Double predict(List<Double> averageSpeed) {

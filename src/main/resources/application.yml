@@ -5,29 +5,9 @@ spring:
   application:
     name: bandwidth
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
-  jpa:
-    database: h2
-    open-in-view: false
-    show-sql: false
-    hibernate:
-      ddl-auto: none
-    properties.hibernate:
-      globally_quoted_identifiers: true
-
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:test;MODE=PostgreSQL;DATABASE_TO_UPPER=false
-    username: sa
-    initialization-mode: always
-    schema: classpath:schema.sql
-    data: classpath:data-sequential.sql
-
 bandwidth:
+  queue:
+    size: 60
   window:
     size: 5
     lag: 1
