@@ -1,18 +1,15 @@
 package com.example.bandwidth.service;
 
 import com.example.bandwidth.entity.FileUpload;
-import com.example.bandwidth.service.BandwidthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -20,12 +17,15 @@ import java.util.stream.Collectors;
 public class FileUploadBuffer {
 
     private static final int MINUTE_TO_MS = 60000;
+    private static final int MINUTE_TO_SECOND = 60;
     private static final ConcurrentLinkedDeque<FileUpload> logQueue = new ConcurrentLinkedDeque<>();    // Log 저장용 Queue. 모든 값은 여기로 먼저 들어옴
     private static final ConcurrentLinkedDeque<Long> timeQueue = new ConcurrentLinkedDeque<>();         // Time 저장용 Queue. Map에서 값을 보존할 시간을 저장함. 보존기간이 만료되면 Queue에서 사라짐.
-    private static final ConcurrentHashMap<Long, Double> map = new ConcurrentHashMap<>();             // 전송용량 저장용 Map. 분당 전송한 용량을 갖고 있음. timeQueue가 만료될 때 값이 삭제됨.
+    private static final ConcurrentHashMap<Long, Double> map = new ConcurrentHashMap<>();               // 전송용량 저장용 Map. 분당 전송한 용량을 갖고 있음. timeQueue가 만료될 때 값이 삭제됨.
 
     @Value("${bandwidth.queue.size}")
     private int queueSize;
+
+    private Double expectedSpeed;
 
     @Autowired
     private BandwidthService service;
@@ -64,7 +64,7 @@ public class FileUploadBuffer {
             FileUpload fileUpload = logQueue.poll();
             long startTime = fileUpload.getStartTime().getTime() / MINUTE_TO_MS;
             long endTime = fileUpload.getEndTime().getTime() / MINUTE_TO_MS + 1;
-            double averageSpeed = fileUpload.getFileSize() / (endTime - startTime);
+            double averageSpeed = fileUpload.getFileSize() / (endTime - startTime) / MINUTE_TO_SECOND ;
             for (long queueTime : timeQueue) {
                 if (queueTime >= startTime && queueTime < endTime) {
                     if(map.containsKey(queueTime)) {
@@ -78,9 +78,14 @@ public class FileUploadBuffer {
         }
     }
 
+    public void clear() {
+        timeQueue.clear();
+        map.clear();
+    }
+
     public void printLogQueue() {
         for (FileUpload fileUpload : logQueue) {
-            log.info("LogQueue : {}", fileUpload);
+            log.info("LogQueue: {}", fileUpload);
         }
     }
 
@@ -88,14 +93,27 @@ public class FileUploadBuffer {
         refresh();
         parsing();
         for (Long aLong : timeQueue) {
-            log.info("TimeQueue : {} Value : {}", new Timestamp(aLong * MINUTE_TO_MS), map.get(aLong));
+            log.info("TimeQueue: {} Value: {}", new Timestamp(aLong * MINUTE_TO_MS), map.get(aLong));
         }
     }
 
-    public double predict() throws Exception {
+    public double getSpeed() throws Exception {
+        if(expectedSpeed==null || !logQueue.isEmpty()) {
+            expectedSpeed = predict();
+        }
+        return expectedSpeed;
+    }
+
+    private double predict() throws Exception {
         refresh();
         parsing();
-        return service.combine(new ArrayList<>(map.values()));
+        List<Double> valueList = new ArrayList<>();
+        for(long l : timeQueue) {
+            if(map.containsKey(l)) {
+                valueList.add(map.get(l));
+            }
+        }
+        return service.combine(valueList);
     }
 
 }

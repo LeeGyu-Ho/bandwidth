@@ -23,30 +23,33 @@ public class BandwidthController {
 
     @PostMapping("/add")
     @Operation(summary = "파일 전송 로그 삽입", description = "파일 전송 로그 삽입")
-    public ResponseEntity add(@RequestBody List<FileUpload> fileUpload) {
+    public void add(@RequestBody List<FileUpload> fileUpload) {
         log.info("add {}", fileUpload);
         buffer.add(fileUpload);
-        return new ResponseEntity(HttpStatus.OK);
     }
 
     @GetMapping("/printLogQueue")
-    @Operation(summary = "Log Queue 출력", description = "처리 대기중인 log 출력")
-    public ResponseEntity printLogQueue() {
+    @Operation(summary = "Log Queue 출력(테스트용)", description = "처리 대기중인 log 출력")
+    public void printLogQueue() {
         buffer.printLogQueue();
-        return new ResponseEntity(HttpStatus.OK);
     }
 
     @GetMapping("/printTimeQueue")
-    @Operation(summary = "Time Queue 출력", description = "현재 Buffer에 저장하고 있는 시간 출력")
-    public ResponseEntity printTimeQueue() {
+    @Operation(summary = "Time Queue 출력(테스트용)", description = "현재 Buffer에 저장하고 있는 시간 출력")
+    public void printTimeQueue() {
         buffer.printTimeQueue();
-        return new ResponseEntity(HttpStatus.OK);
     }
 
     @GetMapping("/predict")
     @Operation(summary = "bandwidth 예측", description = "bandwidth 예측")
-    public ResponseEntity predict() throws Exception {
-        return new ResponseEntity(buffer.predict(), HttpStatus.OK);
+    public ResponseEntity<Double> predict() throws Exception {
+        return new ResponseEntity<>(buffer.getSpeed(), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "Buffer Clear(테스트용)", description = "저장데이터 삭제")
+    public void delete() {
+        buffer.clear();
     }
 
 }

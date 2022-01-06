@@ -6,19 +6,13 @@ import org.apache.commons.math3.util.Precision;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 @Slf4j
 @Service
 public class BandwidthService {
 
-    private final String[] unit = {"Bps", "KBps", "MBps", "GBps"};
 
-    @Value("${bandwidth.threshold}")
-    private int threshold;
-    @Value("${bandwidth.point}")
-    private int point;
     @Value("${bandwidth.window.size}")
     private int windowSize;
     @Value("${bandwidth.window.lag}")
@@ -31,7 +25,7 @@ public class BandwidthService {
         }
         int windowCount = speed.size() / windowLag - windowSize; // 범위 내에 들어갈 window의 개수
         for(int i = 0; i <= windowCount; i++) {
-            List<Double> window = speed.subList(i, i + windowSize - 1);
+            List<Double> window = speed.subList(i, i + windowSize);
             double result = calculate(window);
             average.add(result);
         }
@@ -47,6 +41,7 @@ public class BandwidthService {
         if(list.isEmpty()) {
             throw new ArithmeticException("windowSize가 0입니다.");
         }
+        log.info("Average: {} ListSize: {}", speed / list.size(), list.size());
         return speed / list.size();
     }
 
@@ -63,19 +58,8 @@ public class BandwidthService {
         return regression.predict(i);
     }
 
-    public String prettier(double bps) {
-        int i;
-        for(i = 0; bps>threshold; i++) {
-            if(i>= unit.length-1) {
-                break;
-            }
-            bps/=1024;
-        }
-        return round(bps) + unit[i];
-    }
-
     public double round(double bps) {
-        return round(bps, point);
+        return round(bps, 3);
     }
 
     public double round(double bps, int point) {

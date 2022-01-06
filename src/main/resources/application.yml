@@ -11,6 +11,3 @@ bandwidth:
   window:
     size: 5
     lag: 1
-
-  threshold: 1024
-  point: 3
