@@ -1,21 +1,39 @@
 package com.example.bandwidth.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.commons.math3.util.Precision;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-@Slf4j
-@Service
-public class BandwidthService {
+class BandwidthCalculate {
 
-    @Value("${bandwidth.window.size}")
-    private int windowSize;
-    @Value("${bandwidth.window.lag}")
-    private int windowLag;
+    private int windowSize = 5;
+    private int windowLag = 1;
+    private int roundPoint = 3;
+
+    public int getWindowSize() {
+        return windowSize;
+    }
+
+    public void setWindowSize(int windowSize) {
+        this.windowSize = windowSize;
+    }
+
+    public int getWindowLag() {
+        return windowLag;
+    }
+
+    public void setWindowLag(int windowLag) {
+        this.windowLag = windowLag;
+    }
+
+    public int getRoundPoint() {
+        return roundPoint;
+    }
+
+    public void setRoundPoint(int roundPoint) {
+        this.roundPoint = roundPoint;
+    }
 
     public Double predict(List<Double> speed) throws Exception {
         List<Double> average = new ArrayList<>();
@@ -28,7 +46,6 @@ public class BandwidthService {
             double result = calculate(window);
             average.add(result);
         }
-        log.info("예측결과: {}", round(regression(average)));
         return round(regression(average));
     }
 
@@ -40,7 +57,6 @@ public class BandwidthService {
         if(list.isEmpty()) {
             throw new ArithmeticException("windowSize가 0입니다.");
         }
-        log.info("Average: {} ListSize: {}", speed / list.size(), list.size());
         return speed / list.size();
     }
 
@@ -58,7 +74,7 @@ public class BandwidthService {
     }
 
     private double round(double bps) {
-        return round(bps, 3);
+        return round(bps, roundPoint);
     }
 
     private double round(double bps, int point) {

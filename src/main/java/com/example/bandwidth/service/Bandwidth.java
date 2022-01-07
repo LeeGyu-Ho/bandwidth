@@ -1,10 +1,6 @@
 package com.example.bandwidth.service;
 
 import com.example.bandwidth.entity.FileUpload;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -12,26 +8,28 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 
-@Slf4j
-@Component
-public class FileUploadBuffer {
+public class Bandwidth {
 
     private static final int MINUTE_TO_MS = 60000;
     private static final int MINUTE_TO_SECOND = 60;
     private static final ConcurrentLinkedDeque<FileUpload> logQueue = new ConcurrentLinkedDeque<>();    // Log 저장용 Queue. 모든 값은 여기로 먼저 들어옴
     private static final ConcurrentLinkedDeque<Long> timeQueue = new ConcurrentLinkedDeque<>();         // Time 저장용 Queue. Map에서 값을 보존할 시간을 저장함. 보존기간이 만료되면 Queue에서 사라짐.
     private static final ConcurrentHashMap<Long, Double> map = new ConcurrentHashMap<>();               // 전송용량 저장용 Map. 분당 전송한 용량을 갖고 있음. timeQueue가 만료될 때 값이 삭제됨.
+    private static final BandwidthCalculate service = new BandwidthCalculate();
 
-    @Value("${bandwidth.queue.size}")
-    private int queueSize;
+    private int queueSize = 60;
 
-    @Autowired
-    private BandwidthService service;
+    public int getQueueSize() {
+        return queueSize;
+    }
+
+    public void setQueueSize(int queueSize) {
+        this.queueSize = queueSize;
+    }
 
     // 일정 기간이 지난 Data 삭제
     private void refresh() {
         long now = System.currentTimeMillis() / MINUTE_TO_MS;           // 초단위 절사를 위한 나눗셈
-        log.info("Refresh at {}", new Timestamp(now * MINUTE_TO_MS));
         for(long time : timeQueue) {
             if (time < now - queueSize + 1) {       // 만료시 삭제
                 map.remove(time);
@@ -84,13 +82,13 @@ public class FileUploadBuffer {
 
     public void printLogQueue() {
         for (FileUpload fileUpload : logQueue) {
-            log.info("LogQueue: {}", fileUpload);
+            System.out.println("LogQueue: " + fileUpload);
         }
     }
 
     public void printTimeQueue() {
         for (Long aLong : timeQueue) {
-            log.info("TimeQueue: {} Value: {}", new Timestamp(aLong * MINUTE_TO_MS), map.get(aLong));
+            System.out.println("TimeQueue: "+ new Timestamp(aLong * MINUTE_TO_MS) +" Value: " + map.get(aLong));
         }
     }
 
@@ -110,6 +108,16 @@ public class FileUploadBuffer {
             }
         }
         return service.predict(valueList);
+    }
+
+    private Bandwidth(){}
+
+    public static Bandwidth getInstance() {
+        return LazyHolder.INSTANCE;
+    }
+
+    private static class LazyHolder {
+        private static final Bandwidth INSTANCE = new Bandwidth();
     }
 
 }
