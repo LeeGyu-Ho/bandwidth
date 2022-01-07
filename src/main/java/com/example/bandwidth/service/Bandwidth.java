@@ -80,16 +80,20 @@ public class Bandwidth {
         map.clear();
     }
 
-    public void printLogQueue() {
+    public String printLogQueue() {
+        StringBuffer sb = new StringBuffer();
         for (FileUpload fileUpload : logQueue) {
-            System.out.println("LogQueue: " + fileUpload);
+            sb.append("LogQueue: ").append(fileUpload).append("\n");
         }
+        return sb.toString();
     }
 
-    public void printTimeQueue() {
+    public String printTimeQueue() {
+        StringBuffer sb = new StringBuffer();
         for (Long aLong : timeQueue) {
-            System.out.println("TimeQueue: "+ new Timestamp(aLong * MINUTE_TO_MS) +" Value: " + map.get(aLong));
+            sb.append("TimeQueue: ").append(new Timestamp(aLong * MINUTE_TO_MS)).append(" Value: ").append(map.get(aLong));
         }
+        return sb.toString();
     }
 
     public synchronized double predict(Timestamp start, Timestamp end) throws Exception {
