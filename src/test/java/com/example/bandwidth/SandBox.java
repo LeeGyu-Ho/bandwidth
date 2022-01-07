@@ -5,6 +5,11 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SandBox {
 
@@ -34,6 +39,22 @@ public class SandBox {
 //        Map<String, Object> map = new HashMap();
 //
 //        map.remove("테스트");
+//-----------------------------------------------------
+//        Map<Integer, String> map = new HashMap<>();
+//        for(int i = 0; i < 100; i++) {
+//            map.put(i, String.valueOf(i));
+//        }
+//        int big = 40;
+//        int small = 20;
+//
+//        List<String> list = new ArrayList<>();
+//
+//        map.entrySet().stream()
+//                .filter(s -> s.getKey()<big&&s.getKey()>small)
+//                .forEach(e -> list.add(e.getValue()));
+//
+//        System.out.print(list);
+
 //-----------------------------------------------------
         long now = System.currentTimeMillis() / MINUTE_TO_MS;
         StringBuilder buffer = new StringBuilder();

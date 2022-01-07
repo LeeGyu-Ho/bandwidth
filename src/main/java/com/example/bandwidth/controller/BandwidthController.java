@@ -1,7 +1,7 @@
 package com.example.bandwidth.controller;
 
 import com.example.bandwidth.entity.FileUpload;
-import com.example.bandwidth.service.FileUploadBuffer;
+import com.example.bandwidth.service.Bandwidth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +19,7 @@ import java.util.List;
 @RestController
 public class BandwidthController {
 
-    @Autowired
-    private FileUploadBuffer buffer;
+    private Bandwidth buffer = Bandwidth.getInstance();
 
     @PostMapping("/add")
     @Operation(summary = "파일 전송 로그 삽입", description = "파일 전송 로그 삽입")
