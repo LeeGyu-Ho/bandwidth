@@ -12,13 +12,12 @@ import java.util.*;
 @Service
 public class BandwidthService {
 
-
     @Value("${bandwidth.window.size}")
     private int windowSize;
     @Value("${bandwidth.window.lag}")
     private int windowLag;
 
-    public Double combine(List<Double> speed) throws Exception {
+    public Double predict(List<Double> speed) throws Exception {
         List<Double> average = new ArrayList<>();
         if(speed.size() < windowSize) {
             throw new Exception("시간이 windowSize보다 작음 " + speed.size() + " < " + windowSize);
@@ -29,11 +28,11 @@ public class BandwidthService {
             double result = calculate(window);
             average.add(result);
         }
-        log.info("예측결과: {}", round(predict(average)));
-        return round(predict(average));
+        log.info("예측결과: {}", round(regression(average)));
+        return round(regression(average));
     }
 
-    public Double calculate(List<Double> list){
+    private Double calculate(List<Double> list){
         double speed = 0;
         for(Double f:list) {
             speed += f;
@@ -45,24 +44,24 @@ public class BandwidthService {
         return speed / list.size();
     }
 
-    public Double predict(List<Double> averageSpeed) {
-        SimpleRegression regression = new SimpleRegression();
+    private Double regression(List<Double> averageSpeed) {
+        SimpleRegression reg = new SimpleRegression();
         int i;
         if(averageSpeed.size() == 1) {
             return averageSpeed.get(0);
         }
         for(i = 0; i < averageSpeed.size(); i++) {
-            regression.addData(i, averageSpeed.get(i));
+            reg.addData(i, averageSpeed.get(i));
         }
 
-        return regression.predict(i);
+        return reg.predict(i);
     }
 
-    public double round(double bps) {
+    private double round(double bps) {
         return round(bps, 3);
     }
 
-    public double round(double bps, int point) {
+    private double round(double bps, int point) {
         bps = Precision.round(bps, point);
         return bps;
     }

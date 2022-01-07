@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Slf4j
@@ -42,8 +43,8 @@ public class BandwidthController {
 
     @GetMapping("/predict")
     @Operation(summary = "bandwidth 예측", description = "bandwidth 예측")
-    public ResponseEntity<Double> predict() throws Exception {
-        return new ResponseEntity<>(buffer.getSpeed(), HttpStatus.OK);
+    public ResponseEntity<Double> predict(Timestamp start, Timestamp end) throws Exception {
+        return new ResponseEntity<>(buffer.predict(start, end), HttpStatus.OK);
     }
 
     @DeleteMapping("/delete")

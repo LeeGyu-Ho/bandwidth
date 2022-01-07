@@ -25,13 +25,12 @@ public class FileUploadBuffer {
     @Value("${bandwidth.queue.size}")
     private int queueSize;
 
-    private Double expectedSpeed;
-
     @Autowired
     private BandwidthService service;
 
+    // 일정 기간이 지난 Data 삭제
     private void refresh() {
-        long now = System.currentTimeMillis() / MINUTE_TO_MS;           // 분단위 절사를 위한 나눗셈
+        long now = System.currentTimeMillis() / MINUTE_TO_MS;           // 초단위 절사를 위한 나눗셈
         log.info("Refresh at {}", new Timestamp(now * MINUTE_TO_MS));
         for(long time : timeQueue) {
             if (time < now - queueSize + 1) {       // 만료시 삭제
@@ -58,6 +57,11 @@ public class FileUploadBuffer {
         logQueue.addAll(fileUpload);
     }
 
+    public void add(FileUpload fileUpload) {
+        logQueue.add(fileUpload);
+    }
+
+    // logQueue에 쌓인 FileUpload log들을 분단위로 나누어 저장.
     private void parsing() {
         int size = logQueue.size();
         for(int i = 0; i < size ; i++) {
@@ -67,12 +71,7 @@ public class FileUploadBuffer {
             double averageSpeed = fileUpload.getFileSize() / (endTime - startTime) / MINUTE_TO_SECOND ;
             for (long queueTime : timeQueue) {
                 if (queueTime >= startTime && queueTime < endTime) {
-                    if(map.containsKey(queueTime)) {
-                        double oldValue = map.get(queueTime);
-                        map.put(queueTime, averageSpeed + oldValue);
-                    } else {
-                        map.put(queueTime, averageSpeed);
-                    }
+                    map.merge(queueTime, averageSpeed, (k, v) -> map.get(queueTime) + averageSpeed);
                 }
             }
         }
@@ -90,30 +89,27 @@ public class FileUploadBuffer {
     }
 
     public void printTimeQueue() {
-        refresh();
-        parsing();
         for (Long aLong : timeQueue) {
             log.info("TimeQueue: {} Value: {}", new Timestamp(aLong * MINUTE_TO_MS), map.get(aLong));
         }
     }
 
-    public double getSpeed() throws Exception {
-        if(expectedSpeed==null || !logQueue.isEmpty()) {
-            expectedSpeed = predict();
+    public synchronized double predict(Timestamp start, Timestamp end) throws Exception {
+        if(!logQueue.isEmpty()) {
+            refresh();
+            parsing();
         }
-        return expectedSpeed;
-    }
 
-    private double predict() throws Exception {
-        refresh();
-        parsing();
+        long startTime = start.getTime()/MINUTE_TO_MS;
+        long endTime = end.getTime()/MINUTE_TO_MS;
+
         List<Double> valueList = new ArrayList<>();
         for(long l : timeQueue) {
-            if(map.containsKey(l)) {
+            if(l>=startTime&&l<endTime&&map.containsKey(l)) {
                 valueList.add(map.get(l));
             }
         }
-        return service.combine(valueList);
+        return service.predict(valueList);
     }
 
 }
